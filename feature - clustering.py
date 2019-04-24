@@ -10,6 +10,8 @@
 import numpy as np
 import pandas as pd
 import gc
+import warnings
+warnings.filterwarnings( 'ignore')
 
 bureau = pd.read_csv( '../input/bureau.csv' )
 bureau_balance = pd.read_csv( '../input/bureau_balance.csv' )
