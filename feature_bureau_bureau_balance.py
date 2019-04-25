@@ -109,6 +109,20 @@ bur_active_total_annuity = bureau.loc[ bureau.CREDIT_ACTIVE=='Active' ].groupby(
 bureau['term'] = bureau.AMT_CREDIT_SUM / bureau.AMT_ANNUITY
 bur_avg_term = bureau.loc[ bureau.term < float('inf') ].groupby( 'SK_ID_CURR' )['term'].mean()
 
+#More feature
+#from URL:https://github.com/neptune-ml/open-solution-home-credit/blob/master/src/feature_extraction.py
+bureau['bureau_credit_active_binary'] = ( bureau.CREDIT_ACTIVE != 'Closed' ).astype( int )
+bureau['bureau_credit_enddate_binary'] = ( bureau.DAYS_CREDIT_ENDDATE >0 ).astype( int )
+bureau['bureau_credit_type_consumer'] = ( bureau.CREDIT_TYPE == 'Consumer credit' ).astype( int )
+bureau['bureau_credit_type_car'] = ( bureau.CREDIT_TYPE == 'Car loan' ).astype( int )
+bureau['bureau_credit_type_mortgage'] = (bureau['CREDIT_TYPE'] == 'Mortgage').astype(int)
+bureau['bureau_credit_type_credit_card'] = (bureau['CREDIT_TYPE'] == 'Credit card').astype(int)
+bureau['bureau_credit_type_other'] = (~(bureau['CREDIT_TYPE'].isin(['Consumer credit',
+                                                                    'Car loan', 'Mortgage',
+                                                                    'Credit card']))).astype(int)
+bureau['bureau_unusual_currency'] = (~(bureau['CREDIT_CURRENCY'] == 'currency 1')).astype(int)
+
+#整合
 bureau_num_feature = pd.DataFrame({'bur_ncount':bur_ncount, 'bur_act_count':bur_act_count, 'bur_bad_count':bur_bad_count, 'bur_sold_count':bur_sold_count,
                                    'bur_recent_application':bur_recent_application,'bur_eariliest_application':bur_eariliest_application, 'bur_max_enddate':bur_max_enddate,
                                    'bur_avg_intervel':bur_avg_intervel, 'bur_sd_intervel':bur_sd_intervel,
@@ -121,6 +135,7 @@ bureau_num_feature = pd.DataFrame({'bur_ncount':bur_ncount, 'bur_act_count':bur_
                                    'bur_active_ratio_debt_credit':bur_active_ratio_debt_credit, 'bur_active_ratio_overdue_debt':bur_active_ratio_overdue_debt,
                                    'bur_avg_update':bur_avg_update, 'bur_recent_update':bur_recent_update,
                                    'bur_avg_annuity':bur_avg_annuity, 'bur_total_annuity':bur_total_annuity, 'bur_active_total_annuity':bur_active_total_annuity, 'bur_avg_term':bur_avg_term}).reset_index()
+
 fill0_list = ['bur_act_count', 'bur_bad_count', 'bur_sold_count', 'bur_active_total_overdue_days', 'bur_active_max_overdue_days', 'bur_active_total_amount', 'bur_active_avg_amount',
               'bur_active_total_debt', 'bur_active_avg_debt', 'bur_active_total_limit', 'bur_active_avg_limit', 'bur_active_total_overdue', 'bur_active_avg_overdue',
               'bur_active_ratio_debt_credit', 'bur_active_ratio_overdue_debt', 'bur_active_total_annuity']
