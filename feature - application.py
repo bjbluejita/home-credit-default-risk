@@ -56,6 +56,21 @@ def kde_target( var_name, df ):
     print( 'Median value for loan was not repaid=%0.4f' % avg_not_repaid )
     print( 'Median value for load was repaid=%0.4f' % avg_repaid )
 
+
+##清理数据
+def clean_data( application, **kwargs ):
+    application['CODE_GENDER'].replace('XNA', np.nan, inplace=True)
+    application['DAYS_EMPLOYED'].replace(365243, np.nan, inplace=True)
+    application['DAYS_LAST_PHONE_CHANGE'].replace(0, np.nan, inplace=True)
+    application['NAME_FAMILY_STATUS'].replace('Unknown', np.nan, inplace=True)
+    application['ORGANIZATION_TYPE'].replace('XNA', np.nan, inplace=True)
+    # application[cfg.CATEGORICAL_COLUMNS].fillna(-1, inplace=True)
+    return application
+
+application_train = clean_data( application_train )
+application_test = clean_data( application_test )
+
+
 #A further exploration on application table（进一步探索）
 #### Impute missing values（插补缺失值）
 from sklearn.impute import SimpleImputer
@@ -83,6 +98,7 @@ cat_list, dis_num_list, num_list = feature_type_split( data=application_train,
 
 # discrete
 #耗时耗力
+print( 'begin impute values' )
 start = time.time()
 application_train[cat_list] = SimpleImputer(strategy='most_frequent') \
     .fit_transform(application_train[cat_list])
