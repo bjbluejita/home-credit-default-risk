@@ -104,173 +104,140 @@ end = time.time()
 print( 'Impute values finished! It takes %d second' % ( end-start ) )
 
 #Create more features
-#Term: total credit / annuity(贷款总额和年金比是一个非常出色的特征，有很强的预测效果）
-application_train['TERM'] = application_train.AMT_CREDIT / application_train.AMT_ANNUITY
-application_test['TERM'] = application_test.AMT_CREDIT / application_test.AMT_ANNUITY
+def applicationFeatures( application, **kwargs ):
 
-#OVER_EXPECT_CREDIT: actual credit larger than goods price
-application_train['OVER_EXPECT_CREDIT'] = ( application_train.AMT_CREDIT > application_train.AMT_GOODS_PRICE ).map({False:0, True:1})
-application_test['OVER_EXPECT_CREDIT'] = ( application_test.AMT_CREDIT > application_test.AMT_GOODS_PRICE ).map({False:0, True:1})
+    #Term: total credit / annuity(贷款总额和年金比是一个非常出色的特征，有很强的预测效果）
+    application['TERM'] = application.AMT_CREDIT / application.AMT_ANNUITY
 
-#MEAN_BUILDING_SCORE_TOTAL: the sum of all building AVG score
-application_train['MEAN_BUILDING_SCORE_AVG'] = application_train.iloc[:, 44:58 ].mean( skipna=True, axis=1 )
-application_test['MEAN_BUILDING_SCORE_AVG'] = application_test.iloc[:, 44:58 ].mean( skipna=True, axis=1 )
-
-application_train['TOTAL_BUILDING_SCORE_AVG'] = application_train.iloc[:, 44:58].sum( skipna=True, axis=1 )
-application_test['TOTAL_BUILDING_SCORE_AVG'] = application_test.iloc[:, 44:58].sum( skipna=True, axis=1 )
-
-#the total number of provided document
-application_train['FLAG_DOCUMNET_TOTAL'] = application_train.iloc[:, 96:116].sum( axis=1 )
-application_test['FLAG_DOCUMENT_TOTAL'] = application_test.iloc[:, 96:116].sum( axis=1 )
-
-#the total number of enquiries
-application_train['AMT_REQ_CREDIT_BUREAU_TOTAL'] = application_train.iloc[:, 116:122].sum( axis=1 )
-application_test['AMT_REQ_CREDIT_BUREAU_TOTAL'] = application_test.iloc[:, 116:122].sum( axis=1 )
-
-##### DAYS_EMPLOYED 异常值处理
-# 为异常值列添加一个新列
-application_train['DAYS_EMPLOYED_ANOM'] =( application_train["DAYS_EMPLOYED"] == 365243 ).map( {False:0, True:1})
-# 将异常值替换为中值
-DAYS_EMPLOYED_MEDIAN = application_train['DAYS_EMPLOYED'].median()
-application_train['DAYS_EMPLOYED'].replace({365243: DAYS_EMPLOYED_MEDIAN}, inplace = True)
-
-# 为异常值列添加一个新列
-application_test['DAYS_EMPLOYED_ANOM'] = (application_test["DAYS_EMPLOYED"] == 365243).map( {False:0, True:1} )
-# 将异常值替换为中值
-DAYS_EMPLOYED_MEDIAN = application_test['DAYS_EMPLOYED'].median()
-application_test['DAYS_EMPLOYED'].replace({365243: DAYS_EMPLOYED_MEDIAN }, inplace = True)
-
-##### the days between born and employed
-application_train['BIRTH_EMPLOTED_INTERVEL'] = application_train.DAYS_EMPLOYED - application_train.DAYS_BIRTH
-application_test['BIRTH_EMPLOTED_INTERVEL'] = application_test.DAYS_EMPLOYED - application_test.DAYS_BIRTH
-
-application_train['BIRTH_REGISTRATION_INTERVEL'] = application_train.DAYS_REGISTRATION - application_train.DAYS_BIRTH
-application_test['BIRTH_REGISTRATION_INTERVEL'] = application_test.DAYS_REGISTRATION - application_test.DAYS_BIRTH
-
-#####  Building
-application_train['MEAN_BUILDING_SCORE_AVG'] = application_train.iloc[:, 44:58 ].mean( skipna=True, axis=1)
-application_train['TOTAL_BUILDING_SCORE_AVG'] = application_train.iloc[ :, 44:58 ].sum( axis=1 )
-application_test['MEAN_BUILDING_SCORE_AVG'] = application_test.iloc[:, 44:58 ].mean( skipna=True, axis=1)
-application_test['TOTAL_BUILDING_SCORE_AVG'] = application_test.iloc[ :, 44:58 ].sum( axis=1 )
-
-#### 家庭人均收入
-application_train['INCOME_PER_FAMILY_MEMBER'] = application_train.AMT_INCOME_TOTAL / application_train.CNT_FAM_MEMBERS
-application_test['INCOME_PER_FAMILY_MEMBER'] = application_test.AMT_INCOME_TOTAL / application_test.CNT_FAM_MEMBERS
-
-application_train['SEASON_REMAINING'] = application_train.AMT_INCOME_TOTAL / 4 - application_train.AMT_ANNUITY
-application_test['SEASON_REMAINING'] = application_test.AMT_INCOME_TOTAL / 4 - application_test.AMT_ANNUITY
-
-##### AMT_GOODS_PRICE:消费贷款，希望通过贷款购买货物的价格。和收入组合，一定程度表示贷款压力。。。
-application_train['RATIO_INCOME_GOODS'] = application_train.AMT_INCOME_TOTAL / application_train.AMT_GOODS_PRICE
-application_test['RATIO_INCOME_GOODS'] = application_test.AMT_INCOME_TOTAL / application_test.AMT_GOODS_PRICE
-
-application_train['RATIO_INCOME_CREDIT'] = application_train.AMT_INCOME_TOTAL / application_train.AMT_CREDIT
-application_test['RATIO_INCOME_CREDIT'] = application_test.AMT_INCOME_TOTAL / application_test.AMT_CREDIT
-
-#### log_EXT_SOURCE_1 log_EXT_SOURCE_2 log_EXT_SOURCE_3 是三个非常出色的特征，增加log变换试试
-application_train['log_EXT_SOURCE_1'] = np.log( application_train.EXT_SOURCE_1 )
-application_train['log_EXT_SOURCE_2'] = np.log( application_train.EXT_SOURCE_2 )
-application_train['log_EXT_SOURCE_3'] = np.log( application_train.EXT_SOURCE_3 )
-
-application_test['log_EXT_SOURCE_1'] = np.log( application_test.EXT_SOURCE_1 )
-application_test['log_EXT_SOURCE_2'] = np.log( application_test.EXT_SOURCE_2 )
-application_test['log_EXT_SOURCE_3'] = np.log( application_test.EXT_SOURCE_3 )
-
-application_train['CHILDREN_RATIO'] = application_train.CNT_CHILDREN / application_train.CNT_FAM_MEMBERS
-application_test['CHILDREN_RATIO'] = application_test.CNT_CHILDREN / application_test.CNT_FAM_MEMBERS
-
-#### 客户年龄异常值处理\客户年龄分段处理
-application_train['DAYS_BIRTH_YEAR'] =pd.cut( np.abs( np.round( application_train.DAYS_BIRTH / 365 ) ),  bins = np.linspace(20, 70, num = 11), \
-                                              labels=np.linspace( 1, 10, num=10) )
-application_test['DAYS_BIRTH_YEAR'] = pd.cut( np.abs( np.round( application_test.DAYS_BIRTH / 365 ) ),  bins = np.linspace(20, 70, num = 11), \
-                                              labels=np.linspace( 1, 10, num=10) )
-application_train['DAYS_BIRTH_log'] = np.log( application_train.DAYS_BIRTH )
-application_test['DAYS_BIRTH_log'] = np.log( application_test.DAYS_BIRTH )
-
-application_train['log_TERM'] = np.log( application_train.TERM )
-application_train['RATIO_ANNUITY_INCOME'] =  application_train.AMT_ANNUITY / application_train.AMT_INCOME_TOTAL
-application_train['NAME_TYPE_SUITE_LEVEL'] = application_train['NAME_TYPE_SUITE'].map(lambda x:0 if x=='Unaccompanied' else 1 )
-application_train['NAME_INCOME_TYPE_LEVEL'] = application_train.NAME_INCOME_TYPE.map( {'Student': 0, 'Businessman':0,
-                                                                                       'Pensioner': 1,
-                                                                                       'State servant': 2,
-                                                                                       'Commercial associate': 3,
-                                                                                       'Working': 4,
-                                                                                       'Unemployed': 5,
-                                                                                       'Maternity leave': 6} )
+    #OVER_EXPECT_CREDIT: actual credit larger than goods price
+    application['OVER_EXPECT_CREDIT'] = ( application.AMT_CREDIT > application.AMT_GOODS_PRICE ).map({False:0, True:1})
 
 
-application_test['log_TERM'] = np.log( application_test.TERM )
-application_test['RATIO_ANNUITY_INCOME'] =  application_test.AMT_ANNUITY / application_test.AMT_INCOME_TOTAL
-application_test['NAME_TYPE_SUITE_LEVEL'] = application_test['NAME_TYPE_SUITE'].map(lambda x:0 if x=='Unaccompanied' else 1 )
-application_test['NAME_INCOME_TYPE_LEVEL'] = application_test.NAME_INCOME_TYPE.map( {'Student': 0, 'Businessman':0,
-                                                                                     'Pensioner': 1,
-                                                                                     'State servant': 2,
-                                                                                     'Commercial associate': 3,
-                                                                                     'Working': 4,
-                                                                                     'Unemployed': 5,
-                                                                                     'Maternity leave': 6} )
+    #MEAN_BUILDING_SCORE_TOTAL: the sum of all building AVG score
+    application['MEAN_BUILDING_SCORE_AVG'] = application.iloc[:, 44:58 ].mean( skipna=True, axis=1 )
 
-#from URL:https://github.com/neptune-ml/open-solution-home-credit/blob/master/src/feature_extraction.py
-application_train['annuity_income_percentage'] = application_train.AMT_ANNUITY / application_train.AMT_INCOME_TOTAL
-application_train['cat_to_birth_ratio'] = application_train.OWN_CAR_AGE / application_train.DAYS_BIRTH
-application_train['car_to_employ_ratio'] = application_train.OWN_CAR_AGE / application_train.DAYS_EMPLOYED
-application_train['children_ratio'] = application_train.CNT_CHILDREN / application_train.CNT_FAM_MEMBERS
-application_train['credit_to_annuity_ratio'] = application_train.AMT_CREDIT / application_train.AMT_ANNUITY
-application_train['credit_to_goods_ratio'] = application_train.AMT_CREDIT / application_train.AMT_GOODS_PRICE
-application_train['credit_to_income_ratio'] = application_train.AMT_CREDIT / application_train.AMT_INCOME_TOTAL
-application_train['days_employed_percentage'] = application_train.AMT_INCOME_TOTAL / application_train.AMT_CREDIT
-application_train['income_per_child'] = application_train.AMT_INCOME_TOTAL / ( 1 + application_train.CNT_CHILDREN )
-application_train['income_per_person'] = application_train.AMT_INCOME_TOTAL / application_train.CNT_FAM_MEMBERS
-application_train['payment_rate'] = application_train.AMT_ANNUITY / application_train.AMT_CREDIT
-application_train['phone_to_birth_ratio'] = application_train.DAYS_LAST_PHONE_CHANGE / application_train.DAYS_BIRTH
-application_train['phone_to_employ_ratio'] = application_train.DAYS_LAST_PHONE_CHANGE / application_train.DAYS_EMPLOYED
-application_train['external_sources_weighted'] = np.nansum(
-    np.asarray( [ 1.9, 2.1, 2.6] ) * application_train[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']], axis=1
-)
-application_train['cnt_non_child'] = application_train.CNT_FAM_MEMBERS - application_train.CNT_CHILDREN
-application_train['child_to_non_child_ratio'] = application_train.CNT_CHILDREN / application_train.cnt_non_child
-application_train['income_per_non_child'] = application_train.AMT_INCOME_TOTAL / application_train.cnt_non_child
-application_train['credit_per_person'] = application_train.AMT_CREDIT / application_train.CNT_FAM_MEMBERS
-application_train['credit_per_child'] = application_train.AMT_CREDIT / ( 1 + application_train.CNT_CHILDREN )
-application_train['credit_per_non_child'] = application_train.AMT_CREDIT / application_train.cnt_non_child
-application_train['ext_source_1_plus_2'] = np.nansum( application_train[['EXT_SOURCE_1', 'EXT_SOURCE_2']], axis=1 )
-application_train['ext_source_1_plus_3'] = np.nansum( application_train[['EXT_SOURCE_1', 'EXT_SOURCE_3']], axis=1 )
-application_train['ext_source_2_plus_3'] = np.nansum( application_train[['EXT_SOURCE_2', 'EXT_SOURCE_3']], axis=1 )
-application_train['ext_source_1_is_nan'] = np.isnan( application_train.EXT_SOURCE_1 ).map( {False:1, True:0} )
-application_train['ext_source_2_is_nan'] = np.isnan( application_train.EXT_SOURCE_2 ).map( {False:1, True:0} )
-application_train['ext_source_3_is_nan'] = np.isnan( application_train.EXT_SOURCE_3 ).map( {False:1, True:0} )
-application_train['hour_appr_process_start_radial_x'] = application_train.HOUR_APPR_PROCESS_START.apply(
-    lambda x: cmath.rect( 1, 2 * cmath.pi * x / 24 ).real
-)
-application_train['hour_appr_process_start_radial_y'] = application_train.HOUR_APPR_PROCESS_START.apply(
-    lambda x: cmath.rect( 1, 2 * cmath.pi * x / 24 ).imag
-)
-application_train['id_renewal_days'] = application_train.DAYS_ID_PUBLISH - application_train.DAYS_BIRTH
-application_train['id_renewal_years'] = ( application_train.DAYS_ID_PUBLISH - application_train.DAYS_BIRTH ) / 365
-application_train['id_renewal_days_issue'] = np.vectorize(
-    lambda x: max( list( set( [ min( x, age) for age in [0, 20*365, 25*365, 45*365]]) - set([x]))))\
-( application_train.id_renewal_days )
-application_train['id_renewal_years_issue'] = np.vectorize(
-    lambda x: max( list( set( [ min( x, age) for age in [0, 20, 25, 46]]) - set([x])))) \
-    ( application_train.id_renewal_years )
-application_train.loc[ application_train['id_renewal_days_issue'] <= 20*366, 'id_renewal_days_delay' ] = -1
-application_train.loc[ application_train['id_renewal_years_issue'] <= 20*366, 'id_renewal_years_delay' ] = -1
-application_train.loc[ application_train['id_renewal_days_issue'] > 20*366, 'id_renewal_days_delay' ] = \
-    application_train.loc[ application_train['id_renewal_days_issue'] > 20*366, 'id_renewal_days' ].values - \
-    application_train.loc[ application_train['id_renewal_days_issue'] > 20*366, 'id_renewal_days_issue' ]
-application_train.loc[ application_train['id_renewal_years_issue']>20, 'id_renewal_years_delay' ] = \
-    application_train.loc[ application_train['id_renewal_years_issue']>20, 'id_renewal_years'].values - \
-    application_train.loc[ application_train['id_renewal_years_issue']>20, 'id_renewal_years_issue' ]
+    application['TOTAL_BUILDING_SCORE_AVG'] = application.iloc[:, 44:58].sum( skipna=True, axis=1 )
 
-for function_name in ['min', 'max', 'sum', 'mean', 'nanmedian']:
-    application_train[  'external_source_{}'.format( function_name ) ] = eval( 'np.{}'.format( function_name ))(
-        application_train[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']], axis=1
+    #the total number of provided document
+    application['FLAG_DOCUMNET_TOTAL'] = application.iloc[:, 96:116].sum( axis=1 )
+
+    #the total number of enquiries
+    application['AMT_REQ_CREDIT_BUREAU_TOTAL'] = application.iloc[:, 116:122].sum( axis=1 )
+
+    ##### DAYS_EMPLOYED 异常值处理
+    # 为异常值列添加一个新列
+    application['DAYS_EMPLOYED_ANOM'] =( application["DAYS_EMPLOYED"] == 365243 ).map( {False:0, True:1})
+    # 将异常值替换为中值
+    DAYS_EMPLOYED_MEDIAN = application['DAYS_EMPLOYED'].median()
+    application['DAYS_EMPLOYED'].replace({365243: DAYS_EMPLOYED_MEDIAN}, inplace = True)
+
+    ##### the days between born and employed
+    application['BIRTH_EMPLOTED_INTERVEL'] = application.DAYS_EMPLOYED - application.DAYS_BIRTH
+
+    application['BIRTH_REGISTRATION_INTERVEL'] = application.DAYS_REGISTRATION - application.DAYS_BIRTH
+
+    #####  Building
+    application['MEAN_BUILDING_SCORE_AVG'] = application.iloc[:, 44:58 ].mean( skipna=True, axis=1)
+    application['TOTAL_BUILDING_SCORE_AVG'] = application.iloc[ :, 44:58 ].sum( axis=1 )
+
+    #### 家庭人均收入
+    application['INCOME_PER_FAMILY_MEMBER'] = application.AMT_INCOME_TOTAL / application.CNT_FAM_MEMBERS
+
+    application['SEASON_REMAINING'] = application.AMT_INCOME_TOTAL / 4 - application.AMT_ANNUITY
+
+    ##### AMT_GOODS_PRICE:消费贷款，希望通过贷款购买货物的价格。和收入组合，一定程度表示贷款压力。。。
+    application['RATIO_INCOME_GOODS'] = application.AMT_INCOME_TOTAL / application.AMT_GOODS_PRICE
+
+    application['RATIO_INCOME_CREDIT'] = application.AMT_INCOME_TOTAL / application.AMT_CREDIT
+
+    #### log_EXT_SOURCE_1 log_EXT_SOURCE_2 log_EXT_SOURCE_3 是三个非常出色的特征，增加log变换试试
+    application['log_EXT_SOURCE_1'] = np.log( application.EXT_SOURCE_1 )
+    application['log_EXT_SOURCE_2'] = np.log( application.EXT_SOURCE_2 )
+    application['log_EXT_SOURCE_3'] = np.log( application.EXT_SOURCE_3 )
+
+    application['CHILDREN_RATIO'] = application.CNT_CHILDREN / application.CNT_FAM_MEMBERS
+
+    #### 客户年龄异常值处理\客户年龄分段处理
+    application['DAYS_BIRTH_YEAR'] =pd.cut( np.abs( np.round( application.DAYS_BIRTH / 365 ) ),  bins = np.linspace(20, 70, num = 11), \
+                                            labels=np.linspace( 1, 10, num=10) )
+    application['DAYS_BIRTH_log'] = np.log( application.DAYS_BIRTH )
+
+    application['log_TERM'] = np.log( application.TERM )
+    application['RATIO_ANNUITY_INCOME'] =  application.AMT_ANNUITY / application.AMT_INCOME_TOTAL
+    application['NAME_TYPE_SUITE_LEVEL'] = application['NAME_TYPE_SUITE'].map(lambda x:0 if x=='Unaccompanied' else 1 )
+    application['NAME_INCOME_TYPE_LEVEL'] = application.NAME_INCOME_TYPE.map( {'Student': 0, 'Businessman':0,
+                                                                               'Pensioner': 1,
+                                                                               'State servant': 2,
+                                                                               'Commercial associate': 3,
+                                                                               'Working': 4,
+                                                                               'Unemployed': 5,
+                                                                               'Maternity leave': 6} )
+
+    #more application features
+    #from URL:https://github.com/neptune-ml/open-solution-home-credit/blob/master/src/feature_extraction.py
+    application['annuity_income_percentage'] = application.AMT_ANNUITY / application.AMT_INCOME_TOTAL
+    application['cat_to_birth_ratio'] = application.OWN_CAR_AGE / application.DAYS_BIRTH
+    application['car_to_employ_ratio'] = application.OWN_CAR_AGE / application.DAYS_EMPLOYED
+    application['children_ratio'] = application.CNT_CHILDREN / application.CNT_FAM_MEMBERS
+    application['credit_to_annuity_ratio'] = application.AMT_CREDIT / application.AMT_ANNUITY
+    application['credit_to_goods_ratio'] = application.AMT_CREDIT / application.AMT_GOODS_PRICE
+    application['credit_to_income_ratio'] = application.AMT_CREDIT / application.AMT_INCOME_TOTAL
+    application['days_employed_percentage'] = application.AMT_INCOME_TOTAL / application.AMT_CREDIT
+    application['income_per_child'] = application.AMT_INCOME_TOTAL / ( 1 + application.CNT_CHILDREN )
+    application['income_per_person'] = application.AMT_INCOME_TOTAL / application.CNT_FAM_MEMBERS
+    application['payment_rate'] = application.AMT_ANNUITY / application.AMT_CREDIT
+    application['phone_to_birth_ratio'] = application.DAYS_LAST_PHONE_CHANGE / application.DAYS_BIRTH
+    application['phone_to_employ_ratio'] = application.DAYS_LAST_PHONE_CHANGE / application.DAYS_EMPLOYED
+    application['external_sources_weighted'] = np.nansum(
+        np.asarray( [ 1.9, 2.1, 2.6] ) * application[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']], axis=1
+    )
+    application['cnt_non_child'] = application.CNT_FAM_MEMBERS - application.CNT_CHILDREN
+    application['child_to_non_child_ratio'] = application.CNT_CHILDREN / application.cnt_non_child
+    application['income_per_non_child'] = application.AMT_INCOME_TOTAL / application.cnt_non_child
+    application['credit_per_person'] = application.AMT_CREDIT / application.CNT_FAM_MEMBERS
+    application['credit_per_child'] = application.AMT_CREDIT / ( 1 + application.CNT_CHILDREN )
+    application['credit_per_non_child'] = application.AMT_CREDIT / application.cnt_non_child
+    application['ext_source_1_plus_2'] = np.nansum( application[['EXT_SOURCE_1', 'EXT_SOURCE_2']], axis=1 )
+    application['ext_source_1_plus_3'] = np.nansum( application[['EXT_SOURCE_1', 'EXT_SOURCE_3']], axis=1 )
+    application['ext_source_2_plus_3'] = np.nansum( application[['EXT_SOURCE_2', 'EXT_SOURCE_3']], axis=1 )
+    application['ext_source_1_is_nan'] = np.isnan( application.EXT_SOURCE_1 ).map( {False:1, True:0} )
+    application['ext_source_2_is_nan'] = np.isnan( application.EXT_SOURCE_2 ).map( {False:1, True:0} )
+    application['ext_source_3_is_nan'] = np.isnan( application.EXT_SOURCE_3 ).map( {False:1, True:0} )
+    application['hour_appr_process_start_radial_x'] = application.HOUR_APPR_PROCESS_START.apply(
+        lambda x: cmath.rect( 1, 2 * cmath.pi * x / 24 ).real
+    )
+    application['hour_appr_process_start_radial_y'] = application.HOUR_APPR_PROCESS_START.apply(
+        lambda x: cmath.rect( 1, 2 * cmath.pi * x / 24 ).imag
+    )
+    application['id_renewal_days'] = application.DAYS_ID_PUBLISH - application.DAYS_BIRTH
+    application['id_renewal_years'] = ( application.DAYS_ID_PUBLISH - application.DAYS_BIRTH ) / 365
+    application['id_renewal_days_issue'] = np.vectorize(
+        lambda x: max( list( set( [ min( x, age) for age in [0, 20*365, 25*365, 45*365]]) - set([x])))) \
+        ( application.id_renewal_days )
+    application['id_renewal_years_issue'] = np.vectorize(
+        lambda x: max( list( set( [ min( x, age) for age in [0, 20, 25, 46]]) - set([x])))) \
+        ( application.id_renewal_years )
+    application.loc[ application['id_renewal_days_issue'] <= 20*366, 'id_renewal_days_delay' ] = -1
+    application.loc[ application['id_renewal_years_issue'] <= 20*366, 'id_renewal_years_delay' ] = -1
+    application.loc[ application['id_renewal_days_issue'] > 20*366, 'id_renewal_days_delay' ] = \
+        application.loc[ application['id_renewal_days_issue'] > 20*366, 'id_renewal_days' ].values - \
+        application.loc[ application['id_renewal_days_issue'] > 20*366, 'id_renewal_days_issue' ]
+    application.loc[ application['id_renewal_years_issue']>20, 'id_renewal_years_delay' ] = \
+        application.loc[ application['id_renewal_years_issue']>20, 'id_renewal_years'].values - \
+        application.loc[ application['id_renewal_years_issue']>20, 'id_renewal_years_issue' ]
+
+    for function_name in ['min', 'max', 'sum', 'mean', 'nanmedian']:
+        application[  'external_source_{}'.format( function_name ) ] = eval( 'np.{}'.format( function_name ))(
+            application[['EXT_SOURCE_1', 'EXT_SOURCE_2', 'EXT_SOURCE_3']], axis=1
         )
 
-application_train['short_employment'] = ( application_train.DAYS_EMPLOYED < -2000 ).astype( int )
-application_train['young_age'] = ( application_train.DAYS_BIRTH < -14000 ).astype( int )
+    application['short_employment'] = ( application.DAYS_EMPLOYED < -2000 ).astype( int )
+    application['young_age'] = ( application.DAYS_BIRTH < -14000 ).astype( int )\
 
+    return application
 
+application_train = applicationFeatures( application_train )
+application_test = applicationFeatures( application_test )
 
 
 #####  convert categorical variables to numericals
