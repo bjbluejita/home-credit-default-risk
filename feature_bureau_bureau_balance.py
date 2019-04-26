@@ -122,6 +122,21 @@ bureau['bureau_credit_type_other'] = (~(bureau['CREDIT_TYPE'].isin(['Consumer cr
                                                                     'Credit card']))).astype(int)
 bureau['bureau_unusual_currency'] = (~(bureau['CREDIT_CURRENCY'] == 'currency 1')).astype(int)
 
+#
+groupby = bureau.groupby( by=['SK_ID_CURR'] )
+
+bur_days_credit_count             = groupby['DAYS_CREDIT'].count()
+bur_credit_type_unique            = groupby['CREDIT_TYPE'].nunique()
+bur_amt_credit_sum_debt           = groupby['AMT_CREDIT_SUM_DEBT'].sum()
+bur_total_customer_credit         = groupby['AMT_CREDIT_SUM'].sum()
+bur_amt_credit_sum_overdue        = groupby['AMT_CREDIT_SUM_OVERDUE'].sum()
+bur_cnt_credit_prolong            = groupby['CNT_CREDIT_PROLONG'].sum()
+bur_credit_enddate_binary         = groupby['bureau_credit_enddate_binary'].mean()
+bur_average_of_past_loans_per_type = bur_days_credit_count / bur_credit_type_unique
+bur_debt_credit_ratio              = bur_amt_credit_sum_debt / bur_total_customer_credit
+bur_overdue_debt_ratio             = bur_amt_credit_sum_overdue / bur_total_customer_credit
+
+
 #整合
 bureau_num_feature = pd.DataFrame({'bur_ncount':bur_ncount, 'bur_act_count':bur_act_count, 'bur_bad_count':bur_bad_count, 'bur_sold_count':bur_sold_count,
                                    'bur_recent_application':bur_recent_application,'bur_eariliest_application':bur_eariliest_application, 'bur_max_enddate':bur_max_enddate,
@@ -134,7 +149,11 @@ bureau_num_feature = pd.DataFrame({'bur_ncount':bur_ncount, 'bur_act_count':bur_
                                    'bur_active_total_limit':bur_active_total_limit, 'bur_active_avg_limit':bur_active_avg_limit, 'bur_active_total_overdue':bur_active_total_overdue, 'bur_active_avg_overdue':bur_active_avg_overdue,
                                    'bur_active_ratio_debt_credit':bur_active_ratio_debt_credit, 'bur_active_ratio_overdue_debt':bur_active_ratio_overdue_debt,
                                    'bur_avg_update':bur_avg_update, 'bur_recent_update':bur_recent_update,
-                                   'bur_avg_annuity':bur_avg_annuity, 'bur_total_annuity':bur_total_annuity, 'bur_active_total_annuity':bur_active_total_annuity, 'bur_avg_term':bur_avg_term}).reset_index()
+                                   'bur_avg_annuity':bur_avg_annuity, 'bur_total_annuity':bur_total_annuity, 'bur_active_total_annuity':bur_active_total_annuity, 'bur_avg_term':bur_avg_term,
+                                   'bur_days_credit_count':bur_days_credit_count, 'bur_credit_type_unique':bur_credit_type_unique, 'bur_amt_credit_sum_debt':bur_amt_credit_sum_debt,
+                                   'bur_total_customer_credit':bur_total_customer_credit, 'bur_amt_credit_sum_overdue': bur_amt_credit_sum_overdue, 'bur_cnt_credit_prolong': bur_cnt_credit_prolong,
+                                   'bur_credit_enddate_binary': bur_credit_enddate_binary, 'bur_average_of_past_loans_per_type':bur_average_of_past_loans_per_type,
+                                   'bur_debt_credit_ratio': bur_debt_credit_ratio, 'bur_overdue_debt_ratio':bur_overdue_debt_ratio,}).reset_index()
 
 fill0_list = ['bur_act_count', 'bur_bad_count', 'bur_sold_count', 'bur_active_total_overdue_days', 'bur_active_max_overdue_days', 'bur_active_total_amount', 'bur_active_avg_amount',
               'bur_active_total_debt', 'bur_active_avg_debt', 'bur_active_total_limit', 'bur_active_avg_limit', 'bur_active_total_overdue', 'bur_active_avg_overdue',
@@ -172,3 +191,4 @@ bureau_bb_feature = pd.DataFrame( {'bb_avg_month':bb_avg_month,
 bureau_feature = bureau_num_feature.merge( bureau_cat_feature, on='SK_ID_CURR' ).merge( bureau_bb_feature, on='SK_ID_CURR', how='left' )
 print( bureau_feature.info() )
 bureau_feature.to_csv( 'bureau_feature.csv', index=False )
+print( 'Saved to file.' )
